@@ -948,26 +948,25 @@ void CO_RPDO_process(CO_RPDO_t *RPDO, bool_t syncWas){
             const uint32_t* pMap = &RPDO->RPDOMapPar->mappedObject1;
             CO_SDO_t *pSDO = RPDO->SDO;
 
-                for(i=RPDO->RPDOMapPar->numberOfMappedObjects; i>0; i--){
-                    uint32_t map = *(pMap++);
-                    uint16_t index = (uint16_t)(map>>16);
-                    uint8_t subIndex = (uint8_t)(map>>8);
-                    uint16_t entryNo = CO_OD_find(pSDO, index);
-                    if (entryNo != 0xFFFF) {
-                        CO_OD_extension_t *ext = &pSDO->ODExtensions[entryNo];
-                        if (ext->pODFunc) {
-                            CO_ODF_arg_t ODF_arg;
-                            CO_memset((uint8_t*)&ODF_arg, 0, sizeof(CO_ODF_arg_t));
-                            ODF_arg.reading = false;
-                            ODF_arg.index = index;
-                            ODF_arg.subIndex = subIndex;
-                            ODF_arg.object = ext->object;
-                            ODF_arg.attribute = CO_OD_getAttribute(pSDO, entryNo, subIndex);
-                            ODF_arg.pFlags = CO_OD_getFlagsPointer(pSDO, entryNo, subIndex);
-                            ODF_arg.data = pSDO->OD[entryNo].pData;
-                            ODF_arg.dataLength = CO_OD_getLength(pSDO, entryNo, subIndex);
-                            ext->pODFunc(&ODF_arg);
-                        }
+            for(i=RPDO->RPDOMapPar->numberOfMappedObjects; i>0; i--){
+                uint32_t map = *(pMap++);
+                uint16_t index = (uint16_t)(map>>16);
+                uint8_t subIndex = (uint8_t)(map>>8);
+                uint16_t entryNo = CO_OD_find(pSDO, index);
+                if (entryNo != 0xFFFF) {
+                    CO_OD_extension_t *ext = &pSDO->ODExtensions[entryNo];
+                    if (ext->pODFunc) {
+                        CO_ODF_arg_t ODF_arg;
+                        CO_memset((uint8_t*)&ODF_arg, 0, sizeof(CO_ODF_arg_t));
+                        ODF_arg.reading = false;
+                        ODF_arg.index = index;
+                        ODF_arg.subIndex = subIndex;
+                        ODF_arg.object = ext->object;
+                        ODF_arg.attribute = CO_OD_getAttribute(pSDO, entryNo, subIndex);
+                        ODF_arg.pFlags = CO_OD_getFlagsPointer(pSDO, entryNo, subIndex);
+                        ODF_arg.data = pSDO->OD[entryNo].pData;
+                        ODF_arg.dataLength = CO_OD_getLength(pSDO, entryNo, subIndex);
+                        ext->pODFunc(&ODF_arg);
                     }
                 }
             }
