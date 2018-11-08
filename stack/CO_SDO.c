@@ -67,7 +67,6 @@
 /* Helper functions. **********************************************************/
 
 #ifndef CO_USE_STD
-
 void CO_memcpy(uint8_t dest[], const uint8_t src[], const uint16_t size){
     uint16_t i;
     for(i = 0; i < size; i++){
@@ -81,108 +80,52 @@ void CO_memset(uint8_t dest[], uint8_t c, const uint16_t size){
         dest[i] = c;
     }
 }
-
 #endif
+
+void CO_revmemcpy(uint8_t dest[], const uint8_t src[], const uint16_t size){
+    uint16_t i;
+    for(i = 0; i < size; i++){
+        dest[i] = src[size - i - 1];
+    }
+}
 
 uint16_t CO_getUint16(const uint8_t data[]){
     CO_bytes_t b;
-    b.u8[0] = data[0];
-    b.u8[1] = data[1];
+    CO_memcpy(b.u8, data, 2U);
     return b.u16[0];
 }
 
 uint32_t CO_getUint32(const uint8_t data[]){
     CO_bytes_t b;
-    b.u8[0] = data[0];
-    b.u8[1] = data[1];
-    b.u8[2] = data[2];
-    b.u8[3] = data[3];
+    CO_memcpy(b.u8, data, 4U);
     return b.u32[0];
 }
 
 void CO_setUint16(uint8_t data[], const uint16_t value){
     CO_bytes_t b;
     b.u16[0] = value;
-    data[0] = b.u8[0];
-    data[1] = b.u8[1];
+    CO_memcpy(data, b.u8, 2U);
 }
 
 void CO_setUint32(uint8_t data[], const uint32_t value){
     CO_bytes_t b;
     b.u32[0] = value;
-    data[0] = b.u8[0];
-    data[1] = b.u8[1];
-    data[2] = b.u8[2];
-    data[3] = b.u8[3];
+    CO_memcpy(data, b.u8, 4U);
 }
 
 #ifdef CO_LITTLE_ENDIAN
-void CO_memcpySwap2(void* dest, const void* src){
-    char *cdest;
-    char *csrc;
-    cdest = (char *) dest;
-    csrc = (char *) src;
-    cdest[0] = csrc[0];
-    cdest[1] = csrc[1];
-}
-void CO_memcpySwap4(void* dest, const void* src){
-    char *cdest;
-    char *csrc;
-    cdest = (char *) dest;
-    csrc = (char *) src;
-    cdest[0] = csrc[0];
-    cdest[1] = csrc[1];
-    cdest[2] = csrc[2];
-    cdest[3] = csrc[3];
-}
-void CO_memcpySwap8(void* dest, const void* src){
-    char *cdest;
-    char *csrc;
-    cdest = (char *) dest;
-    csrc = (char *) src;
-    cdest[0] = csrc[0];
-    cdest[1] = csrc[1];
-    cdest[2] = csrc[2];
-    cdest[3] = csrc[3];
-    cdest[4] = csrc[4];
-    cdest[5] = csrc[5];
-    cdest[6] = csrc[6];
-    cdest[7] = csrc[7];
-}
+#define CO_memcpySwap2(dest, src) CO_memcpy(dest, src, 2U)
+
+#define CO_memcpySwap4(dest, src) CO_memcpy(dest, src, 4U)
+
+#define CO_memcpySwap8(dest, src) CO_memcpy(dest, src, 8U)
 #endif
 #ifdef CO_BIG_ENDIAN
-void CO_memcpySwap2(void* dest, const void* src){
-    char *cdest;
-    char *csrc;
-    cdest = (char *) dest;
-    csrc = (char *) src;
-    cdest[0] = csrc[1];
-    cdest[1] = csrc[0];
-}
-void CO_memcpySwap4(void* dest, const void* src){
-    char *cdest;
-    char *csrc;
-    cdest = (char *) dest;
-    csrc = (char *) src;
-    cdest[0] = csrc[3];
-    cdest[1] = csrc[2];
-    cdest[2] = csrc[1];
-    cdest[3] = csrc[0];
-}
-void CO_memcpySwap8(void* dest, const void* src){
-    char *cdest;
-    char *csrc;
-    cdest = (char *) dest;
-    csrc = (char *) src;
-    cdest[0] = csrc[7];
-    cdest[1] = csrc[6];
-    cdest[2] = csrc[5];
-    cdest[3] = csrc[4];
-    cdest[4] = csrc[3];
-    cdest[5] = csrc[2];
-    cdest[6] = csrc[1];
-    cdest[7] = csrc[0];
-}
+#define CO_memcpySwap2(dest, src) CO_revmemcpy(dest, src, 2U)
+
+#define CO_memcpySwap4(dest, src) CO_revmemcpy(dest, src, 4U)
+
+#define CO_memcpySwap8(dest, src) CO_revmemcpy(dest, src, 8U)
 #endif
 
 

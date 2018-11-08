@@ -675,7 +675,6 @@ typedef union{
 #define CO_memset(dest, c, size) (void)memset(dest, c, size)
 
 #else
-
 /**
  * Helper function like memcpy.
  *
@@ -697,8 +696,18 @@ void CO_memcpy(uint8_t dest[], const uint8_t src[], const uint16_t size);
  * @param size Number of data bytes to be copied (max 0xFFFF).
  */
 void CO_memset(uint8_t dest[], uint8_t c, const uint16_t size);
-
 #endif
+
+/**
+ * Helper function like memcpy.
+ *
+ * Function copies n data bytes from source to destination in reverse order.
+ *
+ * @param dest Destination location.
+ * @param c set value.
+ * @param size Number of data bytes to be copied (max 0xFFFF).
+ */
+void CO_revmemcpy(uint8_t dest[], const uint8_t src[], const uint16_t size);
 
 /**
  * Helper function returns uint16 from byte array.

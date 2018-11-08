@@ -910,7 +910,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
                         *pDataSize = size;
 
                         /* copy data */
-                        while(size--) SDO_C->buffer[size] = SDO_C->CANrxData[4+size];
+                        CO_memcpy(SDO_C->buffer, SDO_C->CANrxData + 4, size);
                         SDO_C->state = SDO_STATE_NOTDEFINED;
                         CLEAR_CANrxNew(SDO_C->CANrxNew);
 
@@ -1021,7 +1021,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
                         *pDataSize = size;
 
                         /* copy data */
-                        while(size--) SDO_C->buffer[size] = SDO_C->CANrxData[4+size];
+                        CO_memcpy(SDO_C->buffer, SDO_C->CANrxData + 4, size);
                         SDO_C->state = SDO_STATE_NOTDEFINED;
                         CLEAR_CANrxNew(SDO_C->CANrxNew);
 
