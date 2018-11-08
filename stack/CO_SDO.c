@@ -65,6 +65,9 @@
 
 
 /* Helper functions. **********************************************************/
+
+#ifndef CO_USE_STD
+
 void CO_memcpy(uint8_t dest[], const uint8_t src[], const uint16_t size){
     uint16_t i;
     for(i = 0; i < size; i++){
@@ -78,6 +81,8 @@ void CO_memset(uint8_t dest[], uint8_t c, const uint16_t size){
         dest[i] = c;
     }
 }
+
+#endif
 
 uint16_t CO_getUint16(const uint8_t data[]){
     CO_bytes_t b;
@@ -203,15 +208,7 @@ static void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
     if((msg->DLC == 8U) && (!IS_CANrxNew(SDO->CANrxNew))){
         if(SDO->state != CO_SDO_ST_DOWNLOAD_BL_SUBBLOCK) {
             /* copy data and set 'new message' flag */
-            SDO->CANrxData[0] = msg->data[0];
-            SDO->CANrxData[1] = msg->data[1];
-            SDO->CANrxData[2] = msg->data[2];
-            SDO->CANrxData[3] = msg->data[3];
-            SDO->CANrxData[4] = msg->data[4];
-            SDO->CANrxData[5] = msg->data[5];
-            SDO->CANrxData[6] = msg->data[6];
-            SDO->CANrxData[7] = msg->data[7];
-
+            CO_memcpy(SDO->CANrxData, msg->data, sizeof(SDO->CANrxData));
             SET_CANrxNew(SDO->CANrxNew);
         }
         else {
@@ -406,9 +403,7 @@ void CO_OD_configure(
         if((flags != NULL) && (flagsSize != 0U) && (flagsSize == maxSubIndex)){
             uint16_t i;
             ext->flags = flags;
-            for(i=0U; i<=maxSubIndex; i++){
-                ext->flags[i] = 0U;
-            }
+            CO_memset(ext->flags, 0U, maxSubIndex + 1);
         }
         else{
             ext->flags = NULL;
@@ -645,7 +640,7 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
 
     /* copy data from OD to SDO buffer if not domain */
     if(ODdata != NULL){
-        while(length--) *(SDObuffer++) = *(ODdata++);
+        CO_memcpy(SDObuffer, ODdata, length);
     }
     /* if domain, Object dictionary function MUST exist */
     else{
@@ -758,9 +753,7 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 
     /* copy data from SDO buffer to OD if not domain */
     if(ODdata != NULL && exception_1003 == false){
-        while(length--){
-            *(ODdata++) = *(SDObuffer++);
-        }
+        CO_memcpy(ODdata, SDObuffer, length);
     }
 
     CO_UNLOCK_OD();
@@ -815,8 +808,7 @@ int8_t CO_SDO_process(
             SDO->timeoutTimer = 0;
 
         /* clear response buffer */
-        SDO->CANtxBuff->data[0] = SDO->CANtxBuff->data[1] = SDO->CANtxBuff->data[2] = SDO->CANtxBuff->data[3] = 0;
-        SDO->CANtxBuff->data[4] = SDO->CANtxBuff->data[5] = SDO->CANtxBuff->data[6] = SDO->CANtxBuff->data[7] = 0;
+        CO_memset(SDO->CANtxBuff->data, 0, sizeof(SDO->CANtxBuff->data));
 
         /* Is abort from client? */
         if((IS_CANrxNew(SDO->CANrxNew)) && (SDO->CANrxData[0] == CCS_ABORT)){
@@ -913,9 +905,7 @@ int8_t CO_SDO_process(
         case CO_SDO_ST_DOWNLOAD_INITIATE:{
             /* default response */
             SDO->CANtxBuff->data[0] = 0x60;
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            CO_memcpy(SDO->CANtxBuff->data + 1, SDO->CANrxData + 1, 3);
 
             /* Expedited transfer */
             if((SDO->CANrxData[0] & 0x02U) != 0U){
@@ -928,10 +918,7 @@ int8_t CO_SDO_process(
                 }
 
                 /* copy data to SDO buffer */
-                SDO->ODF_arg.data[0] = SDO->CANrxData[4];
-                SDO->ODF_arg.data[1] = SDO->CANrxData[5];
-                SDO->ODF_arg.data[2] = SDO->CANrxData[6];
-                SDO->ODF_arg.data[3] = SDO->CANrxData[7];
+                CO_memcpy(SDO->ODF_arg.data, SDO->CANrxData + 4, 4);
 
                 /* write data to the Object dictionary */
                 abortCode = CO_SDO_writeOD(SDO, len);
@@ -1005,8 +992,8 @@ int8_t CO_SDO_process(
             }
 
             /* copy data to buffer */
-            for(i=0U; i<len; i++)
-                SDO->ODF_arg.data[SDO->bufferOffset++] = SDO->CANrxData[i+1];
+            CO_memcpy(SDO->ODF_arg.data + SDO->bufferOffset, SDO->CANrxData + 1, len);
+            SDO->bufferOffset += len;
 
             /* If no more segments to be downloaded, write data to the Object dictionary */
             if((SDO->CANrxData[0] & 0x01U) != 0U){
@@ -1037,9 +1024,7 @@ int8_t CO_SDO_process(
 
             /* prepare response */
             SDO->CANtxBuff->data[0] = 0xA4;
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            CO_memcpy(SDO->CANtxBuff->data + 1, SDO->CANrxData + 1, 3);
 
             /* blksize */
             SDO->blksize = (CO_SDO_BUFFER_SIZE > (7*127)) ? 127 : (CO_SDO_BUFFER_SIZE / 7);
@@ -1169,14 +1154,11 @@ int8_t CO_SDO_process(
 
         case CO_SDO_ST_UPLOAD_INITIATE:{
             /* default response */
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            CO_memcpy(SDO->CANtxBuff->data + 1, SDO->CANrxData + 1, 3);
 
             /* Expedited transfer */
             if(SDO->ODF_arg.dataLength <= 4U){
-                for(i=0U; i<SDO->ODF_arg.dataLength; i++)
-                    SDO->CANtxBuff->data[4U+i] = SDO->ODF_arg.data[i];
+                CO_memcpy(SDO->CANtxBuff->data + 4U, SDO->ODF_arg.data, SDO->ODF_arg.dataLength);
 
                 SDO->CANtxBuff->data[0] = 0x43U | ((4U-SDO->ODF_arg.dataLength) << 2U);
                 SDO->state = CO_SDO_ST_IDLE;
@@ -1227,9 +1209,7 @@ int8_t CO_SDO_process(
             /* If data type is domain, re-fill the data buffer if neccessary and indicated so. */
             if((SDO->ODF_arg.ODdataStorage == 0) && (len < 7U) && (!SDO->ODF_arg.lastSegment)){
                 /* copy previous data to the beginning */
-                for(i=0U; i<len; i++){
-                    SDO->ODF_arg.data[i] = SDO->ODF_arg.data[SDO->bufferOffset+i];
-                }
+                CO_memcpy(SDO->ODF_arg.data, SDO->ODF_arg.data + SDO->bufferOffset, len);
 
                 /* move the beginning of the data buffer */
                 SDO->ODF_arg.data += len;
@@ -1244,7 +1224,7 @@ int8_t CO_SDO_process(
 
                 /* return to the original data buffer */
                 SDO->ODF_arg.data -= len;
-                SDO->ODF_arg.dataLength +=  len;
+                SDO->ODF_arg.dataLength += len;
                 SDO->bufferOffset = 0;
 
                 /* re-calculate the length */
@@ -1253,8 +1233,8 @@ int8_t CO_SDO_process(
             }
 
             /* fill response data bytes */
-            for(i=0U; i<len; i++)
-                SDO->CANtxBuff->data[i+1] = SDO->ODF_arg.data[SDO->bufferOffset++];
+            CO_memcpy(SDO->CANtxBuff->data + 1, SDO->ODF_arg.data + SDO->bufferOffset, len);
+            SDO->bufferOffset += len;
 
             /* first response byte */
             SDO->CANtxBuff->data[0] = 0x00 | (SDO->sequence ? 0x10 : 0x00) | ((7-len)<<1);
@@ -1273,9 +1253,7 @@ int8_t CO_SDO_process(
 
         case CO_SDO_ST_UPLOAD_BL_INITIATE:{
             /* default response */
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            CO_memcpy(SDO->CANtxBuff->data + 1, SDO->CANrxData + 1, 3);
 
             /* calculate CRC, if enabled */
             if((SDO->CANrxData[0] & 0x04U) != 0U){
@@ -1371,11 +1349,11 @@ int8_t CO_SDO_process(
                 }
 
                 /* move remaining data to the beginning */
-                for(i=ackseq*7, j=0; i<SDO->ODF_arg.dataLength; i++, j++)
-                    SDO->ODF_arg.data[j] = SDO->ODF_arg.data[i];
+                i = ackseq * 7U;
+                CO_memcpy(SDO->ODF_arg.data, SDO->ODF_arg.data + i, SDO->ODF_arg.dataLength - i);
 
                 /* set remaining data length in buffer */
-                SDO->ODF_arg.dataLength -= ackseq * 7U;
+                SDO->ODF_arg.dataLength -= i;
 
                 /* new block size */
                 SDO->blksize = SDO->CANrxData[2];
@@ -1433,9 +1411,8 @@ int8_t CO_SDO_process(
             }
 
             /* fill response data bytes */
-            for(i=0U; i<len; i++){
-                SDO->CANtxBuff->data[i+1] = SDO->ODF_arg.data[SDO->bufferOffset++];
-            }
+            CO_memcpy(SDO->CANtxBuff->data + 1, SDO->ODF_arg.data + SDO->bufferOffset, len);
+            SDO->bufferOffset += len;
 
             /* first response byte */
             SDO->CANtxBuff->data[0] = ++SDO->sequence;

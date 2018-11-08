@@ -666,6 +666,15 @@ typedef union{
     uint32_t u32[2]; /**< 2 double words */
 }CO_bytes_t;
 
+#ifdef CO_USE_STD
+
+#include <string.h>
+
+#define CO_memcpy(dest, src, size) (void)memcpy(dest, src, size)
+
+#define CO_memset(dest, c, size) (void)memset(dest, c, size)
+
+#else
 
 /**
  * Helper function like memcpy.
@@ -689,6 +698,7 @@ void CO_memcpy(uint8_t dest[], const uint8_t src[], const uint16_t size);
  */
 void CO_memset(uint8_t dest[], uint8_t c, const uint16_t size);
 
+#endif
 
 /**
  * Helper function returns uint16 from byte array.

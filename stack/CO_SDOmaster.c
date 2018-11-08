@@ -124,14 +124,7 @@ static void CO_SDOclient_receive(void *object, const CO_CANrxMsg_t *msg){
     if((msg->DLC == 8U) && (!IS_CANrxNew(SDO_C->CANrxNew)) && (SDO_C->state != SDO_STATE_NOTDEFINED)){
         if(SDO_C->state != SDO_STATE_BLOCKUPLOAD_INPROGRES) {
             /* copy data and set 'new message' flag */
-            SDO_C->CANrxData[0] = msg->data[0];
-            SDO_C->CANrxData[1] = msg->data[1];
-            SDO_C->CANrxData[2] = msg->data[2];
-            SDO_C->CANrxData[3] = msg->data[3];
-            SDO_C->CANrxData[4] = msg->data[4];
-            SDO_C->CANrxData[5] = msg->data[5];
-            SDO_C->CANrxData[6] = msg->data[6];
-            SDO_C->CANrxData[7] = msg->data[7];
+            CO_memcpy(SDO_C->CANrxData, msg->data, sizeof(msg->data));
 
             SET_CANrxNew(SDO_C->CANrxNew);
         }
@@ -329,9 +322,7 @@ static void CO_SDOclient_abort(CO_SDOclient_t *SDO_C, uint32_t code){
 static void CO_SDOTxBufferClear(CO_SDOclient_t *SDO_C) {
     uint16_t i;
 
-    for(i=0; i<8; i++) {
-        SDO_C->CANtxBuff->data[i] = 0;
-    }
+    CO_memset(SDO_C->CANtxBuff->data, 0, sizeof(SDO_C->CANtxBuff->data));
     SDO_C->CANtxBuff->bufferFull = 0;
 }
 
@@ -387,7 +378,7 @@ CO_SDOclient_return_t CO_SDOclientDownloadInitiate(
         SDO_C->CANtxBuff->data[0] = 0x23 | ((4-dataSize) << 2);
 
         /* copy data */
-        for(i=dataSize+3; i>=4; i--) SDO_C->CANtxBuff->data[i] = dataTx[i-4];
+        CO_memcpy(SDO_C->CANtxBuff->data + 4, dataTx, dataSize);
     }
     else if((SDO_C->bufferSize > SDO_C->pst) && blockEnable != 0){ /*  BLOCK transfer */
         /*  set state of block transfer */
@@ -662,11 +653,9 @@ CO_SDOclient_return_t CO_SDOclientDownload(
             j = SDO_C->bufferSize - SDO_C->bufferOffset;
             if(j > 7) j = 7;
             /* fill data bytes */
-            for(i=0; i<j; i++)
-                SDO_C->CANtxBuff->data[i+1] = SDO_C->buffer[SDO_C->bufferOffset + i];
+            CO_memcpy(SDO_C->CANtxBuff->data + 1, SDO_C->buffer + SDO_C->bufferOffset, j);
 
-            for(; i<7; i++)
-                SDO_C->CANtxBuff->data[i+1] = 0;
+            CO_memset(SDO_C->CANtxBuff->data + j + 1, 0, 7 - j);
 
             SDO_C->bufferOffset += j;
             /* SDO command specifier */
@@ -825,7 +814,7 @@ CO_SDOclient_return_t CO_SDOclientUploadInitiate(
     /* empty receive buffer, reset timeout timer and send message */
     CLEAR_CANrxNew(SDO_C->CANrxNew);
     SDO_C->timeoutTimer = 0;
-    SDO_C->timeoutTimerBLOCK =0;
+    SDO_C->timeoutTimerBLOCK = 0;
     CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
     return CO_SDOcli_ok_communicationEnd;
@@ -961,8 +950,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
                         break;
                     }
                     /* copy data to buffer */
-                    for(i=0; i<size; i++)
-                    SDO_C->buffer[SDO_C->bufferOffset + i] = SDO_C->CANrxData[1 + i];
+                    CO_memcpy(SDO_C->buffer + SDO_C->bufferOffset, SDO_C->CANrxData + 1, size);
                     SDO_C->bufferOffset += size;
                     /* If no more segments to be uploaded, finish communication */
                     if(SDO_C->CANrxData[0] & 0x01){

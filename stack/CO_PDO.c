@@ -50,7 +50,6 @@
 #include "CO_NMT_Heartbeat.h"
 #include "CO_SYNC.h"
 #include "CO_PDO.h"
-#include <string.h>
 
 /*
  * Read received message from CAN module.
@@ -72,27 +71,13 @@ static void CO_PDO_receive(void *object, const CO_CANrxMsg_t *msg){
     {
         if(RPDO->synchronous && RPDO->SYNC->CANrxToggle) {
             /* copy data into second buffer and set 'new message' flag */
-            RPDO->CANrxData[1][0] = msg->data[0];
-            RPDO->CANrxData[1][1] = msg->data[1];
-            RPDO->CANrxData[1][2] = msg->data[2];
-            RPDO->CANrxData[1][3] = msg->data[3];
-            RPDO->CANrxData[1][4] = msg->data[4];
-            RPDO->CANrxData[1][5] = msg->data[5];
-            RPDO->CANrxData[1][6] = msg->data[6];
-            RPDO->CANrxData[1][7] = msg->data[7];
+            CO_memcpy(RPDO->CANrxData[1], msg->data, sizeof(msg->data));
 
             SET_CANrxNew(RPDO->CANrxNew[1]);
         }
         else {
             /* copy data into default buffer and set 'new message' flag */
-            RPDO->CANrxData[0][0] = msg->data[0];
-            RPDO->CANrxData[0][1] = msg->data[1];
-            RPDO->CANrxData[0][2] = msg->data[2];
-            RPDO->CANrxData[0][3] = msg->data[3];
-            RPDO->CANrxData[0][4] = msg->data[4];
-            RPDO->CANrxData[0][5] = msg->data[5];
-            RPDO->CANrxData[0][6] = msg->data[6];
-            RPDO->CANrxData[0][7] = msg->data[7];
+            CO_memcpy(RPDO->CANrxData[0], msg->data, sizeof(msg->data));
 
             SET_CANrxNew(RPDO->CANrxNew[0]);
         }
@@ -842,15 +827,11 @@ uint8_t CO_TPDOisCOS(CO_TPDO_t *TPDO){
     pPDOdataByte = &TPDO->CANtxBuff->data[TPDO->dataLength];
     ppODdataByte = &TPDO->mapPointer[TPDO->dataLength];
 
-    switch(TPDO->dataLength){
-        case 8: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x80)) return 1;
-        case 7: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x40)) return 1;
-        case 6: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x20)) return 1;
-        case 5: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x10)) return 1;
-        case 4: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x08)) return 1;
-        case 3: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x04)) return 1;
-        case 2: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x02)) return 1;
-        case 1: if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&0x01)) return 1;
+    if(1 <= TPDO->dataLength && TPDO->dataLength <= 8)
+    {
+        uint8_t flag = 0x01U << (TPDO->dataLength - 0x01U); 
+        if(*(--pPDOdataByte) != **(--ppODdataByte) && (TPDO->sendIfCOSFlags&flag))
+            return 1;
     }
 
     return 0;
@@ -878,7 +859,7 @@ int16_t CO_TPDOsend(CO_TPDO_t *TPDO){
             CO_OD_extension_t *ext = &pSDO->ODExtensions[entryNo];
             if( ext->pODFunc == NULL) continue;
             CO_ODF_arg_t ODF_arg;
-            memset((void*)&ODF_arg, 0, sizeof(CO_ODF_arg_t));
+            CO_memset((void*)&ODF_arg, 0, sizeof(CO_ODF_arg_t));
             ODF_arg.reading = true;
             ODF_arg.index = index;
             ODF_arg.subIndex = subIndex;

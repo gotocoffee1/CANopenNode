@@ -158,9 +158,7 @@ CO_ReturnError_t CO_EM_init(
     emPr->inhibitEmTimer        = 0U;
 
     /* clear error status bits */
-    for(i=0U; i<errorStatusBitsSize; i++){
-        em->errorStatusBits[i] = 0U;
-    }
+    CO_memset(em->errorStatusBits, 0U, errorStatusBitsSize);
 
     /* Configure Object dictionary entry at index 0x1003 and 0x1014 */
     CO_OD_configure(SDO, OD_H1003_PREDEF_ERR_FIELD, CO_ODF_1003, (void*)emPr, 0, 0U);
@@ -395,9 +393,7 @@ void CO_errorReset(CO_EM_t *em, const uint8_t errorBit, const uint32_t infoCode)
             uint8_t bufCopy[8];
 
             /* prepare data for emergency message */
-            bufCopy[0] = 0;
-            bufCopy[1] = 0;
-            bufCopy[2] = 0; /* error register will be set later */
+            CO_memset(bufCopy, 0, 3); /* error register will be set later */
             bufCopy[3] = errorBit;
             CO_memcpySwap4(&bufCopy[4], &infoCode);
 
