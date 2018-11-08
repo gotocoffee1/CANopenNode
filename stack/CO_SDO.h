@@ -744,35 +744,27 @@ void CO_setUint16(uint8_t data[], const uint16_t value);
  */
 void CO_setUint32(uint8_t data[], const uint32_t value);
 
-
 /**
- * Copy 2 data bytes from source to destination. Swap bytes if
+ * Copy data bytes from source to destination. Swap bytes if
  * microcontroller is big-endian.
  *
  * @param dest Destination location.
  * @param src Source location.
  */
-void CO_memcpySwap2(void* dest, const void* src);
+#ifdef CO_LITTLE_ENDIAN
+#define CO_memcpySwap2(dest, src) CO_memcpy(dest, src, 2U)
 
+#define CO_memcpySwap4(dest, src) CO_memcpy(dest, src, 4U)
 
-/**
- * Copy 4 data bytes from source to destination. Swap bytes if
- * microcontroller is big-endian.
- *
- * @param dest Destination location.
- * @param src Source location.
- */
-void CO_memcpySwap4(void* dest, const void* src);
+#define CO_memcpySwap8(dest, src) CO_memcpy(dest, src, 8U)
+#endif
+#ifdef CO_BIG_ENDIAN
+#define CO_memcpySwap2(dest, src) CO_revmemcpy(dest, src, 2U)
 
+#define CO_memcpySwap4(dest, src) CO_revmemcpy(dest, src, 4U)
 
-/**
- * Copy 8 data bytes from source to destination. Swap bytes if
- * microcontroller is big-endian.
- *
- * @param dest Destination location.
- * @param src Source location.
- */
-void CO_memcpySwap8(void* dest, const void* src);
+#define CO_memcpySwap8(dest, src) CO_revmemcpy(dest, src, 8U)
+#endif
 
 
 /**

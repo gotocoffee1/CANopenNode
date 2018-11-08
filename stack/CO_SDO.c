@@ -113,21 +113,6 @@ void CO_setUint32(uint8_t data[], const uint32_t value){
     CO_memcpy(data, b.u8, 4U);
 }
 
-#ifdef CO_LITTLE_ENDIAN
-#define CO_memcpySwap2(dest, src) CO_memcpy(dest, src, 2U)
-
-#define CO_memcpySwap4(dest, src) CO_memcpy(dest, src, 4U)
-
-#define CO_memcpySwap8(dest, src) CO_memcpy(dest, src, 8U)
-#endif
-#ifdef CO_BIG_ENDIAN
-#define CO_memcpySwap2(dest, src) CO_revmemcpy(dest, src, 2U)
-
-#define CO_memcpySwap4(dest, src) CO_revmemcpy(dest, src, 4U)
-
-#define CO_memcpySwap8(dest, src) CO_revmemcpy(dest, src, 8U)
-#endif
-
 
 /*
  * Read received message from CAN module.
