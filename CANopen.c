@@ -766,7 +766,7 @@ CO_NMT_reset_cmd_t CO_process(
 
 
     for(i=0; i<CO_NO_SDO_SERVER; i++){
-        CO_SDO_process(
+        (void)CO_SDO_process(
                 CO->SDO[i],
                 NMTisPreOrOperational,
                 timeDifference_ms,

@@ -67,47 +67,47 @@
 /* Helper functions. **********************************************************/
 
 #ifndef CO_USE_STD
-void CO_memcpy(uint8_t dest[], const uint8_t src[], const uint16_t size){
+void CO_memcpy(void *dest, const void *src, const uint16_t size){
     uint16_t i;
     for(i = 0; i < size; i++){
-        dest[i] = src[i];
+        ((uint8_t*)dest)[i] = ((const uint8_t*)src[i];
     }
 }
 
-void CO_memset(uint8_t dest[], uint8_t c, const uint16_t size){
+void CO_memset(void *dest, uint8_t c, const uint16_t size){
     uint16_t i;
     for(i = 0; i < size; i++){
-        dest[i] = c;
+        ((uint8_t*)dest)[i] = c;
     }
 }
 #endif
 
-void CO_revmemcpy(uint8_t dest[], const uint8_t src[], const uint16_t size){
+void CO_revmemcpy(void *dest, const void *src, const uint16_t size){
     uint16_t i;
     for(i = 0; i < size; i++){
-        dest[i] = src[size - i - 1];
+        ((uint8_t*)dest)[i] = ((const uint8_t*)src)[size - i - 1];
     }
 }
 
-uint16_t CO_getUint16(const uint8_t data[]){
+uint16_t CO_getUint16(const void *data){
     CO_bytes_t b;
     CO_memcpy(b.u8, data, 2U);
     return b.u16[0];
 }
 
-uint32_t CO_getUint32(const uint8_t data[]){
+uint32_t CO_getUint32(const void *data){
     CO_bytes_t b;
     CO_memcpy(b.u8, data, 4U);
     return b.u32[0];
 }
 
-void CO_setUint16(uint8_t data[], const uint16_t value){
+void CO_setUint16(void *data, const uint16_t value){
     CO_bytes_t b;
     b.u16[0] = value;
     CO_memcpy(data, b.u8, 2U);
 }
 
-void CO_setUint32(uint8_t data[], const uint32_t value){
+void CO_setUint32(void *data, const uint32_t value){
     CO_bytes_t b;
     b.u32[0] = value;
     CO_memcpy(data, b.u8, 4U);
@@ -276,7 +276,7 @@ CO_ReturnError_t CO_SDO_init(
         COB_IDServerToClient = 0;
     }
     /* configure SDO server CAN reception */
-    CO_CANrxBufferInit(
+    (void)CO_CANrxBufferInit(
             CANdevRx,               /* CAN device */
             CANdevRxIdx,            /* rx buffer index */
             COB_IDClientToServer,   /* CAN identifier */
@@ -329,7 +329,6 @@ void CO_OD_configure(
         ext->pODFunc = pODFunc;
         ext->object = object;
         if((flags != NULL) && (flagsSize != 0U) && (flagsSize == maxSubIndex)){
-            uint16_t i;
             ext->flags = flags;
             CO_memset(ext->flags, 0U, maxSubIndex + 1);
         }
@@ -699,7 +698,7 @@ static void CO_SDO_abort(CO_SDO_t *SDO, uint32_t code){
     CO_memcpySwap4(&SDO->CANtxBuff->data[4], &code);
     SDO->state = CO_SDO_ST_IDLE;
     CLEAR_CANrxNew(SDO->CANrxNew);
-    CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+    (void)CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
 }
 
 
@@ -1244,7 +1243,6 @@ int8_t CO_SDO_process(
             /* is block confirmation received */
             if(IS_CANrxNew(SDO->CANrxNew)){
                 uint8_t ackseq;
-                uint16_t j;
 
                 /* verify client command specifier and subcommand */
                 if((SDO->CANrxData[0]&0xE3U) != 0xA2U){
@@ -1354,7 +1352,7 @@ int8_t CO_SDO_process(
             }
 
             /* send response */
-            CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+            (void)CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
 
             /* Set timerNext_ms to 0 to inform OS to call this function again without delay. */
             if(timerNext_ms != NULL){
@@ -1385,7 +1383,7 @@ int8_t CO_SDO_process(
     /* free buffer and send message */
     CLEAR_CANrxNew(SDO->CANrxNew);
     if(sendResponse) {
-        CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+        (void)CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
     }
 
     if(SDO->state != CO_SDO_ST_IDLE){

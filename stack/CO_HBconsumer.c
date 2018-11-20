@@ -100,7 +100,7 @@ static void CO_HBcons_monitoredNodeConfig(
 
     /* configure Heartbeat consumer CAN reception */
     if (monitoredNode->HBstate != CO_HBconsumer_UNCONFIGURED) {
-        CO_CANrxBufferInit(
+        (void)CO_CANrxBufferInit(
                 HBcons->CANdevRx,
                 HBcons->CANdevRxIdxStart + idx,
                 COB_ID,
@@ -177,7 +177,7 @@ CO_ReturnError_t CO_HBconsumer_init(
     for(i=0; i<HBcons->numberOfMonitoredNodes; i++) {
         uint8_t nodeId = (HBcons->HBconsTime[i] >> 16U) & 0xFFU;
         uint16_t time = HBcons->HBconsTime[i] & 0xFFFFU;
-        CO_HBconsumer_initEntry(HBcons, i, nodeId, time);
+        (void)CO_HBconsumer_initEntry(HBcons, i, nodeId, time);
     }
 
     /* Configure Object dictionary entry at index 0x1016 */

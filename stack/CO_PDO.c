@@ -638,8 +638,6 @@ static CO_SDO_abortCode_t CO_ODF_RPDOmap(CO_ODF_arg_t *ODF_arg){
                &dummy,
                &MBvar);
     }
-
-    return CO_SDO_AB_NONE;
 }
 
 
@@ -704,8 +702,6 @@ static CO_SDO_abortCode_t CO_ODF_TPDOmap(CO_ODF_arg_t *ODF_arg){
                &dummy,
                &MBvar);
     }
-
-    return CO_SDO_AB_NONE;
 }
 
 
@@ -753,7 +749,7 @@ CO_ReturnError_t CO_RPDO_init(
     RPDO->CANdevRx = CANdevRx;
     RPDO->CANdevRxIdx = CANdevRxIdx;
 
-    CO_RPDOconfigMap(RPDO, RPDOMapPar->numberOfMappedObjects);
+    (void)CO_RPDOconfigMap(RPDO, RPDOMapPar->numberOfMappedObjects);
     CO_RPDOconfigCom(RPDO, RPDOCommPar->COB_IDUsedByRPDO);
 
     return CO_ERROR_NO;
@@ -804,7 +800,7 @@ CO_ReturnError_t CO_TPDO_init(
     TPDO->eventTimer = ((uint32_t) TPDOCommPar->eventTimer) * 1000;
     if(TPDOCommPar->transmissionType>=254) TPDO->sendRequest = 1;
 
-    CO_TPDOconfigMap(TPDO, TPDOMapPar->numberOfMappedObjects);
+    (void)CO_TPDOconfigMap(TPDO, TPDOMapPar->numberOfMappedObjects);
     CO_TPDOconfigCom(TPDO, TPDOCommPar->COB_IDUsedByTPDO, ((TPDOCommPar->transmissionType<=240) ? 1 : 0));
 
     if((TPDOCommPar->transmissionType>240 &&
@@ -947,7 +943,7 @@ void CO_RPDO_process(CO_RPDO_t *RPDO, bool_t syncWas){
                         ODF_arg.pFlags = CO_OD_getFlagsPointer(pSDO, entryNo, subIndex);
                         ODF_arg.data = pSDO->OD[entryNo].pData;
                         ODF_arg.dataLength = CO_OD_getLength(pSDO, entryNo, subIndex);
-                        ext->pODFunc(&ODF_arg);
+                        (void)ext->pODFunc(&ODF_arg);
                     }
                 }
             }
@@ -996,13 +992,13 @@ void CO_TPDO_process(
                 if(TPDO->syncCounter == 254){
                     if(SYNC->counter == TPDO->TPDOCommPar->SYNCStartValue){
                         TPDO->syncCounter = TPDO->TPDOCommPar->transmissionType;
-                        CO_TPDOsend(TPDO);
+                        (void)CO_TPDOsend(TPDO);
                     }
                 }
                 /* Send PDO after every N-th Sync */
                 else if(--TPDO->syncCounter == 0){
                     TPDO->syncCounter = TPDO->TPDOCommPar->transmissionType;
-                    CO_TPDOsend(TPDO);
+                    (void)CO_TPDOsend(TPDO);
                 }
             }
         }

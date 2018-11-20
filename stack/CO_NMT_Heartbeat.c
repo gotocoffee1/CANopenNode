@@ -133,7 +133,7 @@ CO_ReturnError_t CO_NMT_init(
     NMT->pFunctNMT              = NULL;
 
     /* configure NMT CAN reception */
-    CO_CANrxBufferInit(
+    (void)CO_CANrxBufferInit(
             NMT_CANdev,         /* CAN device */
             NMT_rxIdx,          /* rx buffer index */
             CANidRxNMT,         /* CAN identifier */
@@ -229,7 +229,7 @@ CO_NMT_reset_cmd_t CO_NMT_process(
         NMT->HBproducerTimer = 0;
 
         NMT->HB_TXbuff->data[0] = NMT->operatingState;
-        CO_CANsend(NMT->HB_CANdev, NMT->HB_TXbuff);
+        (void)CO_CANsend(NMT->HB_CANdev, NMT->HB_TXbuff);
 
         if(NMT->operatingState == CO_NMT_INITIALIZING){
             if(HBtime > NMT->firstHBTime) NMT->HBproducerTimer = HBtime - NMT->firstHBTime;

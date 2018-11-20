@@ -146,7 +146,7 @@ static CO_SDO_abortCode_t CO_ODF_1005(CO_ODF_arg_t *ODF_arg){
                 SYNC->isProducer = false;
             }
 
-            CO_CANrxBufferInit(
+            (void)CO_CANrxBufferInit(
                     SYNC->CANdevRx,         /* CAN device */
                     SYNC->CANdevRxIdx,      /* rx buffer index */
                     SYNC->COB_ID,           /* CAN identifier */
@@ -290,7 +290,7 @@ CO_ReturnError_t CO_SYNC_init(
     CO_OD_configure(SDO, OD_H1019_SYNC_CNT_OVERFLOW, CO_ODF_1019, (void*)SYNC, 0, 0);
 
     /* configure SYNC CAN reception */
-    CO_CANrxBufferInit(
+    (void)CO_CANrxBufferInit(
             CANdevRx,               /* CAN device */
             CANdevRxIdx,            /* rx buffer index */
             SYNC->COB_ID,           /* CAN identifier */
@@ -343,7 +343,7 @@ uint8_t CO_SYNC_process(
                 ret = 1;
                 SYNC->CANrxToggle = SYNC->CANrxToggle ? false : true;
                 SYNC->CANtxBuff->data[0] = SYNC->counter;
-                CO_CANsend(SYNC->CANdevTx, SYNC->CANtxBuff);
+                (void)CO_CANsend(SYNC->CANdevTx, SYNC->CANtxBuff);
             }
         }
 

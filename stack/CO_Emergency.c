@@ -133,8 +133,6 @@ CO_ReturnError_t CO_EM_init(
         uint16_t                CANdevTxIdx,
         uint16_t                CANidTxEM)
 {
-    uint8_t i;
-
     /* verify arguments */
     if(em==NULL || emPr==NULL || SDO==NULL || errorStatusBits==NULL ||
         errorStatusBitsSize<6U || errorRegister==NULL || preDefErr==NULL || CANdev==NULL){
@@ -283,7 +281,7 @@ void CO_EM_process(
             }
 
             /* send CAN message */
-            CO_CANsend(emPr->CANdev, emPr->CANtxBuff);
+            (void)CO_CANsend(emPr->CANdev, emPr->CANtxBuff);
         }
 
         /* check again after inhibit time elapsed */

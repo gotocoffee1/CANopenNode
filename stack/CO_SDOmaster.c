@@ -214,7 +214,7 @@ CO_ReturnError_t CO_SDOclient_init(
 
     SDO_C->COB_IDClientToServerPrev = 0;
     SDO_C->COB_IDServerToClientPrev = 0;
-    CO_SDOclient_setup(SDO_C, SDO_C->SDOClientPar->COB_IDClientToServer,
+    (void)CO_SDOclient_setup(SDO_C, SDO_C->SDOClientPar->COB_IDClientToServer,
                               SDO_C->SDOClientPar->COB_IDServerToClient,
                               SDO_C->SDOClientPar->nodeIDOfTheSDOServer);
 
@@ -279,7 +279,7 @@ CO_SDOclient_return_t CO_SDOclient_setup(
 
     /* configure SDO client CAN reception, if differs. */
     if(SDO_C->COB_IDClientToServerPrev != idCtoS || SDO_C->COB_IDServerToClientPrev != idStoC) {
-        CO_CANrxBufferInit(
+        (void)CO_CANrxBufferInit(
                 SDO_C->CANdevRx,            /* CAN device */
                 SDO_C->CANdevRxIdx,         /* rx buffer index */
                 (uint16_t)idStoC,           /* CAN identifier */
@@ -312,7 +312,7 @@ static void CO_SDOclient_abort(CO_SDOclient_t *SDO_C, uint32_t code){
     SDO_C->CANtxBuff->data[2] = (SDO_C->index>>8) & 0xFF;
     SDO_C->CANtxBuff->data[3] = SDO_C->subIndex;
     CO_memcpySwap4(&SDO_C->CANtxBuff->data[4], &code);
-    CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+    (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
     SDO_C->state = SDO_STATE_NOTDEFINED;
     CLEAR_CANrxNew(SDO_C->CANrxNew);
 }
@@ -320,8 +320,6 @@ static void CO_SDOclient_abort(CO_SDOclient_t *SDO_C, uint32_t code){
 
 /******************************************************************************/
 static void CO_SDOTxBufferClear(CO_SDOclient_t *SDO_C) {
-    uint16_t i;
-
     CO_memset(SDO_C->CANtxBuff->data, 0, sizeof(SDO_C->CANtxBuff->data));
     SDO_C->CANtxBuff->bufferFull = 0;
 }
@@ -373,7 +371,6 @@ CO_SDOclient_return_t CO_SDOclientDownloadInitiate(
     }
 
     if(dataSize <= 4){
-        uint16_t i;
         /* expedited transfer */
         SDO_C->CANtxBuff->data[0] = 0x23 | ((4-dataSize) << 2);
 
@@ -409,7 +406,7 @@ CO_SDOclient_return_t CO_SDOclientDownloadInitiate(
     /* empty receive buffer, reset timeout timer and send message */
     CLEAR_CANrxNew(SDO_C->CANrxNew);
     SDO_C->timeoutTimer = 0;
-    CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+    (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
     return CO_SDOcli_ok_communicationEnd;
 }
@@ -648,7 +645,7 @@ CO_SDOclient_return_t CO_SDOclientDownload(
         }
             /*  SEGMENTED */
         case SDO_STATE_DOWNLOAD_REQUEST:{
-            uint16_t i, j;
+            uint16_t j;
             /* calculate length to be sent */
             j = SDO_C->bufferSize - SDO_C->bufferOffset;
             if(j > 7) j = 7;
@@ -665,7 +662,7 @@ CO_SDOclient_return_t CO_SDOclientDownload(
                 SDO_C->CANtxBuff->data[0] |= 1;
             }
             /* Send next SDO message */
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
             SDO_C->state = SDO_STATE_DOWNLOAD_RESPONSE;
             break;
         }
@@ -703,7 +700,7 @@ CO_SDOclient_return_t CO_SDOclientDownload(
 
             /*  tx data */
             SDO_C->timeoutTimer = 0;
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
             break;
         }
@@ -723,7 +720,7 @@ CO_SDOclient_return_t CO_SDOclientDownload(
             SDO_C->state = SDO_STATE_BLOCKDOWNLOAD_CRC_ACK;
             /*  tx data */
             SDO_C->timeoutTimer = 0;
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
             break;
         }
@@ -815,7 +812,7 @@ CO_SDOclient_return_t CO_SDOclientUploadInitiate(
     CLEAR_CANrxNew(SDO_C->CANrxNew);
     SDO_C->timeoutTimer = 0;
     SDO_C->timeoutTimerBLOCK = 0;
-    CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+    (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
     return CO_SDOcli_ok_communicationEnd;
 }
@@ -934,7 +931,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
 
             case SDO_STATE_UPLOAD_RESPONSE:{
                 if (SCS == SCS_UPLOAD_SEGMENT){
-                     uint16_t size, i;
+                     uint16_t size;
                     /* verify toggle bit */
                     if((SDO_C->CANrxData[0] &0x10) != (~SDO_C->toggle &0x10)){
                         *pSDOabortCode = CO_SDO_AB_TOGGLE_BIT;
@@ -1147,7 +1144,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
         /*  SEGMENTED UPLOAD */
         case SDO_STATE_UPLOAD_REQUEST:{
             SDO_C->CANtxBuff->data[0] = (CCS_UPLOAD_SEGMENT<<5) | (SDO_C->toggle & 0x10);
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
             SDO_C->state = SDO_STATE_UPLOAD_RESPONSE;
             SDO_C->toggle = ~SDO_C->toggle;
@@ -1162,7 +1159,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
 
             /*  header */
             SDO_C->CANtxBuff->data[0] = (CCS_UPLOAD_BLOCK<<5) | 0x03;
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
             break;
         }
@@ -1178,7 +1175,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
             SDO_C->state = SDO_STATE_BLOCKUPLOAD_BLOCK_CRC;
 
             SDO_C->CANtxBuff->data[2] = SDO_C->block_blksize;
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
             break;
         }
@@ -1217,7 +1214,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
                 SDO_C->state = SDO_STATE_BLOCKUPLOAD_INPROGRES;
             }
             SDO_C->CANtxBuff->data[2] = SDO_C->block_blksize;
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
             break;
         }
@@ -1225,7 +1222,7 @@ CO_SDOclient_return_t CO_SDOclientUpload(
         case SDO_STATE_BLOCKUPLOAD_BLOCK_END:{
             SDO_C->CANtxBuff->data[0] = (CCS_UPLOAD_BLOCK<<5) | 0x01;
 
-            CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
+            (void)CO_CANsend(SDO_C->CANdevTx, SDO_C->CANtxBuff);
 
             *pDataSize = SDO_C->dataSizeTransfered;
 

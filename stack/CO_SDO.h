@@ -684,7 +684,7 @@ typedef union{
  * @param src Source location.
  * @param size Number of data bytes to be copied (max 0xFFFF).
  */
-void CO_memcpy(uint8_t dest[], const uint8_t src[], const uint16_t size);
+void CO_memcpy(void *dest, const void *src, const uint16_t size);
 
 /**
  * Helper function like memset.
@@ -695,7 +695,7 @@ void CO_memcpy(uint8_t dest[], const uint8_t src[], const uint16_t size);
  * @param c set value.
  * @param size Number of data bytes to be copied (max 0xFFFF).
  */
-void CO_memset(uint8_t dest[], uint8_t c, const uint16_t size);
+void CO_memset(void *dest, uint8_t c, const uint16_t size);
 #endif
 
 /**
@@ -707,7 +707,7 @@ void CO_memset(uint8_t dest[], uint8_t c, const uint16_t size);
  * @param c set value.
  * @param size Number of data bytes to be copied (max 0xFFFF).
  */
-void CO_revmemcpy(uint8_t dest[], const uint8_t src[], const uint16_t size);
+void CO_revmemcpy(void *dest, const void *src, const uint16_t size);
 
 /**
  * Helper function returns uint16 from byte array.
@@ -715,7 +715,7 @@ void CO_revmemcpy(uint8_t dest[], const uint8_t src[], const uint16_t size);
  * @param data Location of source data.
  * @return Variable of type uint16_t.
  */
-uint16_t CO_getUint16(const uint8_t data[]);
+uint16_t CO_getUint16(const void *data);
 
 
 /**
@@ -724,7 +724,7 @@ uint16_t CO_getUint16(const uint8_t data[]);
  * @param data Location of source data.
  * @return Variable of type uint32_t.
  */
-uint32_t CO_getUint32(const uint8_t data[]);
+uint32_t CO_getUint32(const void *data);
 
 
 /**
@@ -733,7 +733,7 @@ uint32_t CO_getUint32(const uint8_t data[]);
  * @param data Location of destination data.
  * @param value Variable of type uint16_t to be written into data.
  */
-void CO_setUint16(uint8_t data[], const uint16_t value);
+void CO_setUint16(void *data, const uint16_t value);
 
 
 /**
@@ -742,7 +742,7 @@ void CO_setUint16(uint8_t data[], const uint16_t value);
  * @param data Location of destination data.
  * @param value Variable of type uint32_t to be written into data.
  */
-void CO_setUint32(uint8_t data[], const uint32_t value);
+void CO_setUint32(void *data, const uint32_t value);
 
 /**
  * Copy data bytes from source to destination. Swap bytes if
