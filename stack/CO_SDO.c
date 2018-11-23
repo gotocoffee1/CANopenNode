@@ -70,7 +70,7 @@
 void CO_memcpy(void *dest, const void *src, const uint16_t size){
     uint16_t i;
     for(i = 0; i < size; i++){
-        ((uint8_t*)dest)[i] = ((const uint8_t*)src[i];
+        ((uint8_t*)dest)[i] = ((const uint8_t*)src)[i];
     }
 }
 
