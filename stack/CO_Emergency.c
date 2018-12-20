@@ -250,7 +250,7 @@ void CO_EM_process(
 
             /* copy data to CAN emergency message */
             CO_memcpy(emPr->CANtxBuff->data, em->bufReadPtr, 8U);
-            CO_memcpy((uint8_t*)&preDEF, em->bufReadPtr, 4U);
+            CO_memcpySwap4((uint8_t*)&preDEF, em->bufReadPtr);
             em->bufReadPtr += 8;
 
             /* Update read buffer pointer and reset inhibit timer */

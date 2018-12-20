@@ -65,22 +65,26 @@ static void CO_PDO_receive(void *object, const CO_CANrxMsg_t *msg){
 
     RPDO = (CO_RPDO_t*)object;   /* this is the correct pointer type of the first argument */
 
-    if( (RPDO->valid) &&
-        (*RPDO->operatingState == CO_NMT_OPERATIONAL) &&
-        (msg->DLC >= RPDO->dataLength))
+    if((RPDO->valid) &&
+        (*RPDO->operatingState == CO_NMT_OPERATIONAL))
     {
-        if(RPDO->synchronous && RPDO->SYNC->CANrxToggle) {
-            /* copy data into second buffer and set 'new message' flag */
-            CO_memcpy(RPDO->CANrxData[1], msg->data, sizeof(msg->data));
+        if(msg->DLC == RPDO->dataLength)
+        {
+            if(RPDO->synchronous && RPDO->SYNC->CANrxToggle) {
+                /* copy data into second buffer and set 'new message' flag */
+                CO_memcpy(RPDO->CANrxData[1], msg->data, sizeof(msg->data));
 
-            SET_CANrxNew(RPDO->CANrxNew[1]);
-        }
-        else {
-            /* copy data into default buffer and set 'new message' flag */
-            CO_memcpy(RPDO->CANrxData[0], msg->data, sizeof(msg->data));
+                SET_CANrxNew(RPDO->CANrxNew[1]);
+            }
+            else {
+                /* copy data into default buffer and set 'new message' flag */
+                CO_memcpy(RPDO->CANrxData[0], msg->data, sizeof(msg->data));
 
-            SET_CANrxNew(RPDO->CANrxNew[0]);
+                SET_CANrxNew(RPDO->CANrxNew[0]);
+            }
         }
+        else
+            CO_errorReport(RPDO->em, CO_EM_RPDO_WRONG_LENGTH, (msg->DLC < RPDO->dataLength) ? CO_EMC_PDO_LENGTH : CO_EMC_PDO_LENGTH_EXC, msg->DLC);
     }
 }
 
@@ -977,7 +981,7 @@ void CO_TPDO_process(
         else if(SYNC && syncWas){
             /* send synchronous acyclic PDO */
             if(TPDO->TPDOCommPar->transmissionType == 0){
-                if(TPDO->sendRequest) CO_TPDOsend(TPDO);
+                CO_TPDOsend(TPDO);
             }
             /* send synchronous cyclic PDO */
             else{
