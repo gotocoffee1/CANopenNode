@@ -210,7 +210,7 @@ static uint32_t CO_PDOfindMap(
     uint8_t subIndex;
     uint8_t dataLen;
     uint8_t objectLen;
-    uint8_t attr;
+    uint16_t attr;
 
     index = (uint16_t)(map>>16);
     subIndex = (uint8_t)(map>>8);
@@ -259,7 +259,7 @@ static uint32_t CO_PDOfindMap(
     if(R_T!=0 && !((attr&CO_ODA_TPDO_MAPABLE) && (attr&CO_ODA_READABLE))) return CO_SDO_AB_NO_MAP;   /* Object cannot be mapped to the PDO. */
 
     /* is size of variable big enough for map */
-    objectLen = CO_OD_getLength(SDO, entryNo, subIndex);
+    objectLen = (uint8_t) CO_OD_getLength(SDO, entryNo, subIndex);
     if(objectLen < dataLen) return CO_SDO_AB_NO_MAP;   /* Object cannot be mapped to the PDO. */
 
     /* mark multibyte variable */

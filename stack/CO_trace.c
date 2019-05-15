@@ -141,7 +141,7 @@ static void findVariable(CO_trace_t *trace) {
             uint16_t len = CO_OD_getLength(trace->SDO, entryNo, subIndex);
 
             if(len < dataLen) {
-                dataLen = len;
+                dataLen = (uint8_t) len;
             }
         }
         else {

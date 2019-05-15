@@ -786,7 +786,7 @@ CO_SDOclient_return_t CO_SDOclientUploadInitiate(
 
         /*  set number of segments in block */
         SDO_C->block_blksize = SDO_C->block_size_max;
-        if ((SDO_C->block_blksize *7) > SDO_C->bufferSize){
+        if ((SDO_C->block_blksize * 7U) > SDO_C->bufferSize){
             return CO_SDOcli_wrongArguments;
         }
 

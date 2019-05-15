@@ -1346,7 +1346,7 @@ int8_t CO_SDO_process(
             /* verify end of transfer */
             if((SDO->bufferOffset == SDO->ODF_arg.dataLength) && (SDO->ODF_arg.lastSegment)){
                 SDO->CANtxBuff->data[0] |= 0x80;
-                SDO->lastLen = len;
+                SDO->lastLen = (uint8_t) len;
                 SDO->blksize = SDO->sequence;
                 SDO->endOfTransfer = true;
             }
