@@ -727,7 +727,7 @@ CO_ReturnError_t CO_RPDO_init(
         uint16_t                CANdevRxIdx)
 {
     /* verify arguments */
-    if(RPDO==NULL || em==NULL || SDO==NULL || SYNC==NULL || operatingState==NULL ||
+    if(RPDO==NULL || em==NULL || SDO==NULL || operatingState==NULL ||
         RPDOCommPar==NULL || RPDOMapPar==NULL || CANdevRx==NULL){
         return CO_ERROR_ILLEGAL_ARGUMENT;
     }
@@ -765,6 +765,7 @@ CO_ReturnError_t CO_TPDO_init(
         CO_TPDO_t              *TPDO,
         CO_EM_t                *em,
         CO_SDO_t               *SDO,
+        CO_SYNC_t              *SYNC,
         uint8_t                *operatingState,
         uint8_t                 nodeId,
         uint16_t                defaultCOB_ID,
@@ -785,6 +786,7 @@ CO_ReturnError_t CO_TPDO_init(
     /* Configure object variables */
     TPDO->em = em;
     TPDO->SDO = SDO;
+    TPDO->SYNC = SYNC;
     TPDO->TPDOCommPar = TPDOCommPar;
     TPDO->TPDOMapPar = TPDOMapPar;
     TPDO->operatingState = operatingState;
@@ -870,7 +872,7 @@ int16_t CO_TPDOsend(CO_TPDO_t *TPDO){
             ODF_arg.object = ext->object;
             ODF_arg.attribute = CO_OD_getAttribute(pSDO, entryNo, subIndex);
             ODF_arg.pFlags = CO_OD_getFlagsPointer(pSDO, entryNo, subIndex);
-            ODF_arg.data = CO_OD_getDataPointer(pSDO, entryNo, subIndex);
+            ODF_arg.data = CO_OD_getDataPointer(pSDO, entryNo, subIndex); //https://github.com/CANopenNode/CANopenNode/issues/100
             ODF_arg.dataLength = CO_OD_getLength(pSDO, entryNo, subIndex);
             ext->pODFunc(&ODF_arg);
         }
@@ -901,11 +903,14 @@ void CO_RPDO_process(CO_RPDO_t *RPDO, bool_t syncWas){
     }
     else if(!RPDO->synchronous || syncWas)
     {
+#if defined(RPDO_CALLS_EXTENSION)
         bool_t update = false;
+#endif /* defined(RPDO_CALLS_EXTENSION) */
+
         uint8_t bufNo = 0;
 
         /* Determine, which of the two rx buffers, contains relevant message. */
-        if(RPDO->synchronous && !RPDO->SYNC->CANrxToggle) {
+        if(RPDO->SYNC && RPDO->synchronous && !RPDO->SYNC->CANrxToggle) {
             bufNo = 1;
         }
 
@@ -924,10 +929,12 @@ void CO_RPDO_process(CO_RPDO_t *RPDO, bool_t syncWas){
             for(; i>0; i--) {
                 **(ppODdataByte++) = *(pPDOdataByte++);
             }
+#if defined(RPDO_CALLS_EXTENSION)
             update = true;
+#endif /* defined(RPDO_CALLS_EXTENSION) */
         }
 #ifdef RPDO_CALLS_EXTENSION
-        if(update==true && RPDO->SDO->ODExtensions){
+        if(update && RPDO->SDO->ODExtensions){
             int16_t i;
             /* for each mapped OD, check mapping to see if an OD extension is available, and call it if it is */
             const uint32_t* pMap = &RPDO->RPDOMapPar->mappedObject1;
@@ -964,7 +971,6 @@ void CO_RPDO_process(CO_RPDO_t *RPDO, bool_t syncWas){
 /******************************************************************************/
 void CO_TPDO_process(
         CO_TPDO_t              *TPDO,
-        CO_SYNC_t              *SYNC,
         bool_t                  syncWas,
         uint32_t                timeDifference_us)
 {
@@ -982,7 +988,7 @@ void CO_TPDO_process(
         }
 
         /* Synchronous PDOs */
-        else if(SYNC && syncWas){
+        else if(TPDO->SYNC && syncWas){
             /* send synchronous acyclic PDO */
             if(TPDO->TPDOCommPar->transmissionType == 0){
                 CO_TPDOsend(TPDO);
@@ -991,14 +997,14 @@ void CO_TPDO_process(
             else{
                 /* is the start of synchronous TPDO transmission */
                 if(TPDO->syncCounter == 255){
-                    if(SYNC->counterOverflowValue && TPDO->TPDOCommPar->SYNCStartValue)
+                    if(TPDO->SYNC->counterOverflowValue && TPDO->TPDOCommPar->SYNCStartValue)
                         TPDO->syncCounter = 254;   /* SYNCStartValue is in use */
                     else
                         TPDO->syncCounter = TPDO->TPDOCommPar->transmissionType;
                 }
                 /* if the SYNCStartValue is in use, start first TPDO after SYNC with matched SYNCStartValue. */
                 if(TPDO->syncCounter == 254){
-                    if(SYNC->counter == TPDO->TPDOCommPar->SYNCStartValue){
+                    if(TPDO->SYNC->counter == TPDO->TPDOCommPar->SYNCStartValue){
                         TPDO->syncCounter = TPDO->TPDOCommPar->transmissionType;
                         (void)CO_TPDOsend(TPDO);
                     }

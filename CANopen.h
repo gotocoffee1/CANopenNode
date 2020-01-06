@@ -81,6 +81,7 @@ extern "C" {
     #include "CO_Emergency.h"
     #include "CO_NMT_Heartbeat.h"
     #include "CO_SYNC.h"
+    #include "CO_TIME.h"
     #include "CO_PDO.h"
     #include "CO_HBconsumer.h"
 #if CO_NO_SDO_CLIENT != 0
@@ -108,7 +109,7 @@ typedef enum{
      CO_CAN_ID_NMT_SERVICE       = 0x000,   /**< 0x000, Network management */
      CO_CAN_ID_SYNC              = 0x080,   /**< 0x080, Synchronous message */
      CO_CAN_ID_EMERGENCY         = 0x080,   /**< 0x080, Emergency messages (+nodeID) */
-     CO_CAN_ID_TIME_STAMP        = 0x100,   /**< 0x100, Time stamp message */
+	 CO_CAN_ID_TIME        		 = 0x100,   /**< 0x100, Time message */
      CO_CAN_ID_TPDO_1            = 0x180,   /**< 0x180, Default TPDO1 (+nodeID) */
      CO_CAN_ID_RPDO_1            = 0x200,   /**< 0x200, Default RPDO1 (+nodeID) */
      CO_CAN_ID_TPDO_2            = 0x280,   /**< 0x280, Default TPDO2 (+nodeID) */
@@ -135,6 +136,7 @@ typedef struct{
     CO_EMpr_t          *emPr;           /**< Emergency process object */
     CO_NMT_t           *NMT;            /**< NMT object */
     CO_SYNC_t          *SYNC;           /**< SYNC object */
+    CO_TIME_t          *TIME;           /**< TIME object */
     CO_RPDO_t          *RPDO[CO_NO_RPDO];/**< RPDO objects */
     CO_TPDO_t          *TPDO[CO_NO_TPDO];/**< TPDO objects */
     CO_HBconsumer_t    *HBcons;         /**<  Heartbeat consumer object*/
@@ -192,13 +194,13 @@ CO_ReturnError_t CO_new(void);
  *
  * Function must be called in the communication reset section.
  *
- * @param CANbaseAddress Address of the CAN module, passed to CO_CANmodule_init().
+ * @param CANdriverState Pointer to the CAN module, passed to CO_CANmodule_init().
  * @param bitRate CAN bit rate.
  * @return #CO_ReturnError_t: CO_ERROR_NO, CO_ERROR_ILLEGAL_ARGUMENT,
  * CO_ERROR_ILLEGAL_BAUDRATE, CO_ERROR_OUT_OF_MEMORY
  */
 CO_ReturnError_t CO_CANinit(
-        int32_t                 CANbaseAddress,
+        void                   *CANdriverState,
         uint16_t                bitRate);
 
 
@@ -234,7 +236,7 @@ CO_ReturnError_t CO_CANopenInit(
  *
  * Function must be called in the communication reset section.
  *
- * @param CANbaseAddress Address of the CAN module, passed to CO_CANmodule_init().
+ * @param CANdriverState Pointer to the user-defined CAN base structure, passed to CO_CANmodule_init().
  * @param nodeId Node ID of the CANopen device (1 ... 127).
  * @param bitRate CAN bit rate.
  *
@@ -242,7 +244,7 @@ CO_ReturnError_t CO_CANopenInit(
  * CO_ERROR_OUT_OF_MEMORY, CO_ERROR_ILLEGAL_BAUDRATE
  */
 CO_ReturnError_t CO_init(
-        int32_t                 CANbaseAddress,
+        void                   *CANdriverState,
         uint8_t                 nodeId,
         uint16_t                bitRate);
 
@@ -252,9 +254,9 @@ CO_ReturnError_t CO_init(
 /**
  * Delete CANopen object and free memory. Must be called at program exit.
  *
- * @param CANbaseAddress Address of the CAN module, passed to CO_CANmodule_init().
+ * @param CANdriverState Pointer to the user-defined CAN base structure, passed to CO_CANmodule_init().
  */
-void CO_delete(int32_t CANbaseAddress);
+void CO_delete(void *CANdriverState);
 
 
 /**
@@ -280,21 +282,35 @@ CO_NMT_reset_cmd_t CO_process(
         uint16_t               *timerNext_ms);
 
 
+#if CO_NO_SYNC == 1
 /**
- * Process CANopen SYNC and RPDO objects.
+ * Process CANopen SYNC objects.
  *
  * Function must be called cyclically from real time thread with constant
- * interval (1ms typically). It processes SYNC and receive PDO CANopen objects.
+ * interval (1ms typically). It processes SYNC CANopen objects.
  *
  * @param CO This object.
  * @param timeDifference_us Time difference from previous function call in [microseconds].
  *
  * @return True, if CANopen SYNC message was just received or transmitted.
  */
-bool_t CO_process_SYNC_RPDO(
+bool_t CO_process_SYNC(
         CO_t                   *CO,
         uint32_t                timeDifference_us);
+#endif
 
+/**
+ * Process CANopen RPDO objects.
+ *
+ * Function must be called cyclically from real time thread with constant.
+ * interval (1ms typically). It processes receive PDO CANopen objects.
+ *
+ * @param CO This object.
+ * @param syncWas True, if CANopen SYNC message was just received or transmitted.
+ */
+void CO_process_RPDO(
+        CO_t                   *CO,
+        bool_t                  syncWas);
 
 /**
  * Process CANopen TPDO objects.

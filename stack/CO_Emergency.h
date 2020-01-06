@@ -109,7 +109,7 @@ typedef enum{
     CO_ERR_REG_GENERIC_ERR  = 0x01U, /**< bit 0, generic error */
     CO_ERR_REG_CURRENT      = 0x02U, /**< bit 1, current */
     CO_ERR_REG_VOLTAGE      = 0x04U, /**< bit 2, voltage */
-    CO_ERR_ERG_TEMPERATUR   = 0x08U, /**< bit 3, temperature */
+    CO_ERR_REG_TEMPERATURE  = 0x08U, /**< bit 3, temperature */
     CO_ERR_REG_COMM_ERR     = 0x10U, /**< bit 4, communication error (overrun, error state) */
     CO_ERR_REG_DEV_PROFILE  = 0x20U, /**< bit 5, device profile specific */
     CO_ERR_REG_RESERVED     = 0x40U, /**< bit 6, reserved (always 0) */
@@ -155,6 +155,7 @@ typedef enum{
 #define CO_EMC_DAM_MPDO                 0x8230U /**< 0x8230, DAM MPDO not processed, destination object not available */
 #define CO_EMC_SYNC_DATA_LENGTH         0x8240U /**< 0x8240, Unexpected SYNC data length */
 #define CO_EMC_RPDO_TIMEOUT             0x8250U /**< 0x8250, RPDO timeout */
+#define CO_EMC_TIME_DATA_LENGTH         0x8260U /**< 0x8260, Unexpected TIME data length */
 #define CO_EMC_EXTERNAL_ERROR           0x9000U /**< 0x90xx, External Error */
 #define CO_EMC_ADDITIONAL_FUNC          0xF000U /**< 0xF0xx, Additional Functions */
 #define CO_EMC_DEVICE_SPECIFIC          0xFF00U /**< 0xFFxx, Device specific */
@@ -210,8 +211,8 @@ typedef enum{
 #define CO_EM_CAN_RX_BUS_PASSIVE        0x06U /**< 0x06, communication, info, CAN receive bus is passive */
 #define CO_EM_CAN_TX_BUS_PASSIVE        0x07U /**< 0x07, communication, info, CAN transmit bus is passive */
 #define CO_EM_NMT_WRONG_COMMAND         0x08U /**< 0x08, communication, info, Wrong NMT command received */
-#define CO_EM_09_unused                 0x09U /**< 0x09, (unused) */
-#define CO_EM_0A_unused                 0x0AU /**< 0x0A, (unused) */
+#define CO_EM_TIME_TIMEOUT              0x09U /**< 0x09, communication, info, TIME message timeout */
+#define CO_EM_TIME_LENGTH               0x0AU /**< 0x0A, communication, info, Unexpected TIME data length */
 #define CO_EM_0B_unused                 0x0BU /**< 0x0B, (unused) */
 #define CO_EM_0C_unused                 0x0CU /**< 0x0C, (unused) */
 #define CO_EM_0D_unused                 0x0DU /**< 0x0D, (unused) */
@@ -271,16 +272,25 @@ typedef enum{
  * CO_EMpr_t object.
  */
 typedef struct{
-    uint8_t            *errorStatusBits;/**< From CO_EM_init() */
-    uint8_t             errorStatusBitsSize;/**< From CO_EM_init() */
+    uint8_t            *errorStatusBits;        /**< From CO_EM_init() */
+    uint8_t             errorStatusBitsSize;    /**< From CO_EM_init() */
+
     /** Internal buffer for storing unsent emergency messages.*/
     uint8_t             buf[CO_EM_INTERNAL_BUFFER_SIZE * 8];
-    uint8_t            *bufEnd;         /**< End+1 address of the above buffer */
-    uint8_t            *bufWritePtr;    /**< Write pointer in the above buffer */
-    uint8_t            *bufReadPtr;     /**< Read pointer in the above buffer */
-    uint8_t             bufFull;        /**< True if above buffer is full */
-    uint8_t             wrongErrorReport;/**< Error in arguments to CO_errorReport() */
-    void              (*pFunctSignal)(void);/**< From CO_EM_initCallback() or NULL */
+    uint8_t            *bufEnd;             /**< End+1 address of the above buffer */
+    uint8_t            *bufWritePtr;        /**< Write pointer in the above buffer */
+    uint8_t            *bufReadPtr;         /**< Read pointer in the above buffer */
+    uint8_t             bufFull;            /**< True if above buffer is full */
+    uint8_t             wrongErrorReport;   /**< Error in arguments to CO_errorReport() */
+
+    /** From CO_EM_initCallback() or NULL */
+    void              (*pFunctSignal)(void);
+    /** From CO_EM_initCallbackRx() or NULL */
+    void              (*pFunctSignalRx)(const uint16_t ident,
+                                        const uint16_t errorCode,
+                                        const uint8_t errorRegister,
+                                        const uint8_t errorBit,
+                                        const uint32_t infoCode);
 }CO_EM_t;
 
 
@@ -372,7 +382,9 @@ typedef struct{
  * @param preDefErr Pointer to _Pre defined error field_ array from Object
  * dictionary, index 0x1003.
  * @param preDefErrSize Size of the above array.
- * @param CANdev CAN device for Emergency transmission.
+ * @param CANdevRx CAN device for Emergency reception.
+ * @param CANdevRxIdx Index of receive buffer in the above CAN device.
+ * @param CANdevTx CAN device for Emergency transmission.
  * @param CANdevTxIdx Index of transmit buffer in the above CAN device.
  * @param CANidTxEM CAN identifier for Emergency message.
  *
@@ -387,7 +399,9 @@ CO_ReturnError_t CO_EM_init(
         uint8_t                *errorRegister,
         uint32_t               *preDefErr,
         uint8_t                 preDefErrSize,
-        CO_CANmodule_t         *CANdev,
+        CO_CANmodule_t         *CANdevRx,
+        uint16_t                CANdevRxIdx,
+        CO_CANmodule_t         *CANdevTx,
         uint16_t                CANdevTxIdx,
         uint16_t                CANidTxEM);
 
@@ -405,6 +419,28 @@ CO_ReturnError_t CO_EM_init(
 void CO_EM_initCallback(
         CO_EM_t               *em,
         void                  (*pFunctSignal)(void));
+
+
+/**
+ * Initialize Emergency received callback function.
+ *
+ * Function initializes optional callback function, which executes after
+ * error condition is received. Function may wake up external task,
+ * which processes mainline CANopen functions.
+ * 
+ * @remark Depending on the CAN driver implementation, this function is called
+ * inside an ISR
+ *
+ * @param em This object.
+ * @param pFunctSignal Pointer to the callback function. Not called if NULL.
+ */
+void CO_EM_initCallbackRx(
+        CO_EM_t                *em,
+        void                  (*pFunctSignalRx)(const uint16_t ident,
+                                                const uint16_t errorCode,
+                                                const uint8_t errorRegister,
+                                                const uint8_t errorBit,
+                                                const uint32_t infoCode));
 
 
 /**
