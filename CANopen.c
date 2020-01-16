@@ -149,7 +149,7 @@
 #endif
 #endif
 
-/* These declarations here are needed in the case the switches for the project 
+/* These declarations here are needed in the case the switches for the project
     change the visibility in the headers in a way that the compiler doesn't see an declaration anymore */
 
 #if CO_NO_LSS_SERVER == 0 /* LSS Server means LSS slave */
@@ -224,7 +224,7 @@ CO_ReturnError_t CO_init(
         {
             return error;
         }
-        
+
     }
 #endif
 
@@ -365,7 +365,7 @@ CO_ReturnError_t CO_new(void)
   #if CO_NO_SYNC == 1
                   + sizeof(CO_SYNC_t)
   #endif
-  #if CO_NO_TIME == 1 
+  #if CO_NO_TIME == 1
                   + sizeof(CO_TIME_t)
   #endif
                   + sizeof(CO_RPDO_t) * CO_NO_RPDO
@@ -403,7 +403,7 @@ CO_ReturnError_t CO_new(void)
   #if CO_NO_SYNC == 1
     if(CO->SYNC                         == NULL) errCnt++;
   #endif
-  #if CO_NO_TIME == 1 
+  #if CO_NO_TIME == 1
     if(CO->TIME                     	== NULL) errCnt++;
   #endif
     for(i=0; i<CO_NO_RPDO; i++){
@@ -928,7 +928,7 @@ void CO_process_TPDO(
 
     /* Verify PDO Change Of State and process PDOs */
     for(i=0; i<CO_NO_TPDO; i++){
-        if(!co->TPDO[i]->sendRequest) 
+        if(!co->TPDO[i]->sendRequest)
             co->TPDO[i]->sendRequest = CO_TPDOisCOS(co->TPDO[i]);
         CO_TPDO_process(co->TPDO[i], syncWas, timeDifference_us);
     }
